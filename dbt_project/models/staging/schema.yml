@@ -1,0 +1,33 @@
+version: 2
+
+sources:
+  - name: raw
+    schema: main
+    tables:
+      - name: bronze_customers
+        description: "Raw customer data ingested into the bronze layer."
+      - name: bronze_sales
+        description: "Raw transaction and sales data ingested into the bronze layer."
+
+models:
+  - name: stg_customers
+    description: "Standardized staging model for customer records."
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+      - name: email
+        tests:
+          - not_null
+
+  - name: stg_sales
+    description: "Staging model for sales and order transactions."
+    columns:
+      - name: sale_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null

@@ -1,0 +1,8 @@
+checks for fct_sales:
+  - min(amount) >= 0:
+      name: "Transaction amounts must be positive"
+  - missing_count(customer_name) = 0:
+      name: "No orphan sales (customer join failed)"
+  - invalid_count(status) = 0:
+      invalid values: ['UNKNOWN', 'ERROR']
+      name: "Transaction status must be valid"

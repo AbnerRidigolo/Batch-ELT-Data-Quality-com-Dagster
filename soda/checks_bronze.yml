@@ -1,0 +1,17 @@
+checks for bronze_customers:
+  - row_count > 0:
+      name: "Bronze Customers table should not be empty"
+  - missing_count(id) = 0:
+      name: "Customer ID should not contain nulls"
+  - duplicate_count(id) = 0:
+      name: "Customer ID should be unique"
+
+checks for bronze_sales:
+  - row_count > 0:
+      name: "Bronze Sales table should not be empty"
+  - missing_count(sale_id) = 0:
+      name: "Sale ID should not contain nulls"
+  - duplicate_count(sale_id) = 0:
+      name: "Sale ID should be unique"
+  - missing_count(amount) = 0:
+      name: "Amount should not be null"

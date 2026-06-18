@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: dim_customers
+    description: "Dimension table for customers, containing cleaned details."
+    columns:
+      - name: customer_id
+        tests:
+          - unique
+          - not_null
+
+  - name: fct_sales
+    description: "Fact table for sales transactions, joined with customer metrics."
+    columns:
+      - name: sale_id
+        tests:
+          - unique
+          - not_null
+      - name: customer_id
+        tests:
+          - not_null
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_id
+      - name: amount
+        tests:
+          - not_null
+
+  - name: dm_monthly_sales
+    description: "Analytical data mart aggregating total sales and transactions per month."
+    columns:
+      - name: sales_month
+        tests:
+          - unique
+          - not_null

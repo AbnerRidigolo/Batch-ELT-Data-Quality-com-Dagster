@@ -1,0 +1,18 @@
+# Core Orchestration
+dagster
+dagster-webserver
+dagster-dbt
+
+# Core Transformations & Database
+dbt-core
+dbt-duckdb
+duckdb
+pandas
+
+# Data Quality & Observability
+soda-core-duckdb
+
+# Visualization
+streamlit
+matplotlib
+setuptools
