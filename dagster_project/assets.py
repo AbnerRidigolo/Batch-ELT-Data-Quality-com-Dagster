@@ -13,8 +13,8 @@ if venv_bin not in path_entries:
     path_entries.insert(0, venv_bin)
 os.environ["PATH"] = os.pathsep.join(path_entries)
 
-from dagster import asset, Output, AssetExecutionContext, AssetKey
-from dagster_dbt import dbt_assets, DbtProject, DbtCliResource
+from dagster import asset, Output, AssetExecutionContext, AssetKey, Failure
+from dagster_dbt import dbt_assets, DagsterDbtTranslator, DbtProject, DbtCliResource
 import subprocess
 import pandas as pd
 import duckdb
@@ -109,13 +109,16 @@ def soda_validate_bronze(context: AssetExecutionContext):
     result = subprocess.run(cmd, capture_output=True, text=True)
     context.log.info(result.stdout)
     
-    if result.returncode == 0:
-        context.log.info("Soda checks passed successfully on Bronze tables.")
-    elif result.returncode == 1:
-        context.log.warning("Soda checks completed with warnings/failures on Bronze tables.")
-    else:
-        context.log.error(result.stderr)
-        raise Exception(f"Soda scan failed to execute: {result.stderr}")
+    if result.returncode != 0:
+        raise Failure(
+            description=f"Bronze quality gate rejected the load (Soda exit {result.returncode}).",
+            metadata={
+                "exit_code": result.returncode,
+                "scan_output": result.stdout[-4000:],
+                "scan_errors": result.stderr[-4000:],
+            },
+        )
+    context.log.info("Soda checks passed successfully on Bronze tables.")
         
     return Output(
         value=result.returncode,
@@ -125,12 +128,21 @@ def soda_validate_bronze(context: AssetExecutionContext):
         }
     )
 
-@dbt_assets(manifest=dbt_project.manifest_path)
+class QualityGateTranslator(DagsterDbtTranslator):
+    def get_asset_spec(self, manifest, unique_id, project):
+        spec = super().get_asset_spec(manifest, unique_id, project)
+        if unique_id.startswith("model."):
+            return spec.merge_attributes(deps=[soda_validate_bronze.key])
+        return spec
+
+
+@dbt_assets(manifest=dbt_project.manifest_path, dagster_dbt_translator=QualityGateTranslator())
 def ecom_dbt_assets(context: AssetExecutionContext, dbt: DbtCliResource):
     """Executes dbt transformations (Staging -> Marts) and runs dbt tests."""
     yield from dbt.cli(["build", "--profiles-dir", dbt_project_dir], context=context).stream()
 
-@asset(deps=[ecom_dbt_assets, soda_validate_bronze], compute_kind="soda")
+
+@asset(deps=[ecom_dbt_assets], compute_kind="soda")
 def soda_validate_gold(context: AssetExecutionContext):
     """Runs Soda Core checks on the gold facts table."""
     soda_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "soda"))

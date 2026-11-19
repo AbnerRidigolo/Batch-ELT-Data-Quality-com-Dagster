@@ -133,8 +133,10 @@ Diferente do Airflow, onde as Dags apenas gerenciam a ordem das execuções das 
 
 ### 2. Contratos de Qualidade de Dados (Data Quality Guardrails)
 Implementamos uma barreira (guardrail) de qualidade dupla:
-*   **Camada Bronze**: O pipeline faz verificações rígidas de integridade física (IDs nulos ou e-mails vazios).
+*   **Camada Bronze**: O Soda verifica tabelas vazias, IDs nulos ou duplicados e valores de venda ausentes. Os modelos dbt dependem desse asset. No job completo, só o código de saída zero libera o `dbt build`.
 *   **Camada Gold**: Após o dbt processar as agregações, o Soda roda testes lógicos de negócio (faturamento negativo, joins órfãos sem correspondência na dimensão, e status fora do domínio esperado). Se qualquer teste falhar, o pipeline notifica o orquestrador imediatamente.
+
+O [workflow de qualidade](.github/workflows/quality-gate.yml) testa a linhagem, insere uma venda inválida em um DuckDB temporário para comprovar que o dbt não inicia e executa o job completo com dados válidos até a checagem Gold.
 
 ### 3. Analytics Engineering sob Modelo Estrela (Star Schema)
 Utilizamos o dbt para estruturar os dados analíticos na modelagem Kimball:
