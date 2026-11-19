@@ -27,7 +27,9 @@ jobs:
           python -m pip install 'dagster-dbt==0.29.30' 'dbt-core==1.10.23' 'dbt-duckdb==1.11.1' 'duckdb==1.0.0' pandas pytest
           python -m venv "$RUNNER_TEMP/soda"
           "$RUNNER_TEMP/soda/bin/python" -m pip install 'soda-core-duckdb==3.5.6' setuptools
-          echo "$RUNNER_TEMP/soda/bin" >> "$GITHUB_PATH"
+          mkdir "$RUNNER_TEMP/soda-cli"
+          ln -s "$RUNNER_TEMP/soda/bin/soda" "$RUNNER_TEMP/soda-cli/soda"
+          echo "$RUNNER_TEMP/soda-cli" >> "$GITHUB_PATH"
       - name: Compile dbt assets
         run: dbt parse --project-dir dbt_project --profiles-dir dbt_project
       - name: Validate rejected Bronze data and the successful pipeline
